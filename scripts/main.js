@@ -66,6 +66,28 @@ function ensureRuntime(token) {
   return runtime.get(token);
 }
 
+function resizeTokenMesh(token, scaleX = 1, scaleY = 1) {
+  if (!token?.mesh) return;
+
+  if (typeof token.mesh.resize === "function") {
+    token.mesh.resize(token.w, token.h, {
+      fit: "contain",
+      scaleX,
+      scaleY
+    });
+    return;
+  }
+
+  // Respaldo defensivo para implementaciones antiguas o meshes personalizados.
+  if (token.mesh.scale?.set && token.mesh.texture?.width && token.mesh.texture?.height) {
+    const fit = Math.min(
+      token.w / token.mesh.texture.width,
+      token.h / token.mesh.texture.height
+    );
+    token.mesh.scale.set(fit * scaleX, fit * scaleY);
+  }
+}
+
 function restoreToken(token) {
   if (!token) return;
   const state = ensureRuntime(token);
@@ -77,10 +99,15 @@ function restoreToken(token) {
     if (token.texture) token.mesh.texture = token.texture;
     token.mesh.alpha = Number(token.document?.alpha ?? 1);
     token.mesh.visible = true;
-    const scaleX = Number(token.document?.texture?.scaleX ?? 1);
-    const scaleY = Number(token.document?.texture?.scaleY ?? 1);
-    token.mesh.width = token.w * scaleX;
-    token.mesh.height = token.h * scaleY;
+    if (typeof token._refreshMeshSizeAndScale === "function") {
+      token._refreshMeshSizeAndScale();
+    } else {
+      resizeTokenMesh(
+        token,
+        Number(token.document?.texture?.scaleX ?? 1),
+        Number(token.document?.texture?.scaleY ?? 1)
+      );
+    }
   }
 
   if (token.nameplate) token.nameplate.text = token.document?.name ?? "";
@@ -136,10 +163,13 @@ async function applyPerception(token) {
     state.image = "";
   }
 
-  const signX = Number(token.document.texture?.scaleX ?? 1) < 0 ? -1 : 1;
-  const signY = Number(token.document.texture?.scaleY ?? 1) < 0 ? -1 : 1;
-  token.mesh.width = token.w * entry.scale * signX;
-  token.mesh.height = token.h * entry.scale * signY;
+  const baseScaleX = Number(token.document.texture?.scaleX ?? 1);
+  const baseScaleY = Number(token.document.texture?.scaleY ?? 1);
+  resizeTokenMesh(
+    token,
+    baseScaleX * entry.scale,
+    baseScaleY * entry.scale
+  );
 }
 
 async function applyAll() {

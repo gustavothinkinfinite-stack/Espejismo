@@ -10,7 +10,7 @@ Repositorio oficial: <https://github.com/gustavothinkinfinite-stack/Espejismo>
 - Verificado contra la API de Foundry VTT 14.
 - Independiente del sistema de juego: puede utilizarse con PF2e y otros sistemas.
 
-## Funciones de la versión 1.0.0
+## Funciones de la versión 1.0.1
 
 - Imagen diferente para cada jugador.
 - Nombre aparente diferente para cada jugador.
@@ -25,7 +25,7 @@ Repositorio oficial: <https://github.com/gustavothinkinfinite-stack/Espejismo>
 
 ## Instalación manual
 
-1. Descomprimir `espejismo-v1.0.0.zip` dentro de la carpeta `Data/modules` de Foundry.
+1. Descomprimir `espejismo-v1.0.1.zip` dentro de la carpeta `Data/modules` de Foundry.
 2. Reiniciar Foundry VTT.
 3. Activar **Espejismo** en la configuración de módulos del mundo.
 
@@ -66,3 +66,14 @@ Espejismo.applyAll();
 Espejismo.applyToToken(canvas.tokens.controlled[0]);
 Espejismo.getConfig(canvas.tokens.controlled[0]);
 ```
+
+## Historial de cambios
+
+### 1.0.1
+
+- Corregida la escala de la apariencia percibida en Foundry VTT 13 y 14.
+- La escala ahora utiliza `PrimarySpriteMesh.resize`, preserva la proporción de la imagen y respeta la escala base del token.
+
+### 1.0.0
+
+- Primera versión pública.

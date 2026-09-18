@@ -1,0 +1,38 @@
+{
+  "id": "espejismo",
+  "title": "Espejismo",
+  "description": "Permite que cada jugador vea una apariencia y un nombre diferentes para el mismo token, con un panel de control claro para el GM.",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "Gustavo Matus"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14",
+    "maximum": "14"
+  },
+  "esmodules": [
+    "scripts/main.js"
+  ],
+  "styles": [
+    "styles/perception-tokens.css"
+  ],
+  "languages": [
+    {
+      "lang": "es",
+      "name": "Español",
+      "path": "lang/es.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "socket": false,
+  "url": "https://github.com/gustavothinkinfinite-stack/Espejismo",
+  "manifest": "https://raw.githubusercontent.com/gustavothinkinfinite-stack/Espejismo/main/module.json",
+  "download": "https://raw.githubusercontent.com/gustavothinkinfinite-stack/Espejismo/main/dist/espejismo-v1.0.0.zip"
+}

@@ -1,0 +1,30 @@
+name: Validate module
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate JavaScript and tests
+        run: |
+          node --check scripts/main.js
+          node --test tests/*.mjs
+
+      - name: Validate JSON
+        run: |
+          python3 -m json.tool module.json >/dev/null
+          python3 -m json.tool lang/es.json >/dev/null
+          python3 -m json.tool lang/en.json >/dev/null

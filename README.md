@@ -10,7 +10,7 @@ Repositorio oficial: <https://github.com/gustavothinkinfinite-stack/Espejismo>
 - Verificado contra la API de Foundry VTT 14.
 - Independiente del sistema de juego: puede utilizarse con PF2e y otros sistemas.
 
-## Funciones de la versión 1.1.0
+## Funciones de la versión 1.1.1
 
 - Imagen diferente para cada jugador.
 - Nombre aparente diferente para cada jugador.
@@ -52,6 +52,8 @@ También puede instalarse desde Foundry usando esta URL de manifiesto:
 
 También puede abrirse el panel desde el botón del ojo incluido en el HUD del token.
 
+Como accesos alternativos, Espejismo añade un ojo propio a la barra principal y el atajo `Ctrl + Shift + E`.
+
 ## Notas
 
 - La configuración se guarda en flags del TokenDocument; la apariencia real no se sustituye.
@@ -71,6 +73,11 @@ Espejismo.getConfig(canvas.tokens.controlled[0]);
 ```
 
 ## Historial de cambios
+
+### 1.1.1
+
+- Añadido un control principal propio para que el ojo no quede oculto entre las herramientas de Token.
+- Añadido el atajo `Ctrl + Shift + E` para abrir el panel del GM en cualquier momento.
 
 ### 1.1.0
 

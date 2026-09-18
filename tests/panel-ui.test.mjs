@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 const registered = new Map();
 let dialogContent = "";
+let registeredKeybinding = null;
 
 globalThis.Hooks = {
   once(name, callback) { registered.set(`once:${name}`, callback); },
@@ -46,6 +47,9 @@ const token = {
 globalThis.game = {
   i18n: { localize: () => "" },
   settings: { get: () => true, register: () => undefined },
+  keybindings: {
+    register: (_moduleId, _action, config) => { registeredKeybinding = config; }
+  },
   user: { id: "gm", isGM: true },
   users: {
     contents: [
@@ -64,8 +68,12 @@ globalThis.foundry = {
 globalThis.ui = { notifications: { warn: () => undefined } };
 
 await import("../scripts/main.js");
+registered.get("once:init")();
 registered.get("once:ready")();
 globalThis.Espejismo.openPanel(token);
+
+const controls = { tokens: { name: "tokens", order: 10, tools: {} } };
+registered.get("on:getSceneControlButtons")(controls);
 
 assert.match(dialogContent, /Ve el original/);
 assert.match(dialogContent, /Ve otra apariencia/);
@@ -75,5 +83,9 @@ assert.match(dialogContent, /RESULTADO PARA Bruno/);
 assert.match(dialogContent, /Aldeano/);
 assert.match(dialogContent, /1.5×/);
 assert.match(dialogContent, /80%/);
+assert.equal(typeof controls.tokens.tools.espejismo.onChange, "function");
+assert.equal(controls.espejismo.icon, "fa-solid fa-eye");
+assert.equal(typeof controls.espejismo.onChange, "function");
+assert.equal(registeredKeybinding.editable[0].key, "KeyE");
 
 console.log("Espejismo intuitive panel test: OK");

@@ -4,6 +4,8 @@
   "PERCEPTION_TOKENS.PanelTitle": "Espejismo — What each player sees",
   "PERCEPTION_TOKENS.OpenPanel": "Manage perceptions",
   "PERCEPTION_TOKENS.OpenForToken": "Configure per-player perception",
+  "PERCEPTION_TOKENS.KeybindingName": "Open the Espejismo panel",
+  "PERCEPTION_TOKENS.KeybindingHint": "Opens the GM panel even when the scene control button is hidden.",
   "PERCEPTION_TOKENS.ModuleStatus": "MODULE STATUS",
   "PERCEPTION_TOKENS.WorldActive": "Espejismo is active",
   "PERCEPTION_TOKENS.WorldPaused": "Espejismo is paused",

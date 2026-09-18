@@ -630,7 +630,7 @@ function addSceneControl(controls) {
   }
 
   if (!controls?.tokens?.tools) return;
-  controls.tokens.tools[MODULE_ID] = {
+  const openTool = {
     name: MODULE_ID,
     title: "PERCEPTION_TOKENS.OpenPanel",
     icon: "fa-solid fa-eye",
@@ -638,6 +638,27 @@ function addSceneControl(controls) {
     button: true,
     visible: true,
     onChange: () => openPanel()
+  };
+  controls.tokens.tools[MODULE_ID] = openTool;
+
+  // Acceso principal visible incluso si el usuario ocultó herramientas del grupo Tokens.
+  controls[MODULE_ID] = {
+    name: MODULE_ID,
+    title: "PERCEPTION_TOKENS.OpenPanel",
+    icon: "fa-solid fa-eye",
+    order: Number(controls.tokens.order ?? 0) + 1,
+    visible: true,
+    activeTool: "open",
+    onChange: (_event, active) => {
+      if (active) openPanel();
+    },
+    tools: {
+      open: {
+        ...openTool,
+        name: "open",
+        order: 0
+      }
+    }
   };
 }
 
@@ -670,6 +691,18 @@ Hooks.once("init", () => {
     default: true,
     restricted: true,
     onChange: () => applyAll()
+  });
+
+  game.keybindings?.register(MODULE_ID, "openPanel", {
+    name: "PERCEPTION_TOKENS.KeybindingName",
+    hint: "PERCEPTION_TOKENS.KeybindingHint",
+    editable: [{ key: "KeyE", modifiers: ["Control", "Shift"] }],
+    restricted: true,
+    onDown: () => {
+      if (!game.user?.isGM) return false;
+      openPanel();
+      return true;
+    }
   });
 });
 

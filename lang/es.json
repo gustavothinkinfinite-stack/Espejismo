@@ -4,6 +4,8 @@
   "PERCEPTION_TOKENS.PanelTitle": "Espejismo — Qué verá cada jugador",
   "PERCEPTION_TOKENS.OpenPanel": "Administrar percepciones",
   "PERCEPTION_TOKENS.OpenForToken": "Configurar percepción por jugador",
+  "PERCEPTION_TOKENS.KeybindingName": "Abrir el panel de Espejismo",
+  "PERCEPTION_TOKENS.KeybindingHint": "Abre el panel del GM aunque el botón de la barra de controles esté oculto.",
   "PERCEPTION_TOKENS.ModuleStatus": "ESTADO DEL MÓDULO",
   "PERCEPTION_TOKENS.WorldActive": "Espejismo está activo",
   "PERCEPTION_TOKENS.WorldPaused": "Espejismo está pausado",

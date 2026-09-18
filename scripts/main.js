@@ -2,7 +2,6 @@ import {
   MODULE_ID,
   FLAG_KEY,
   configFromRows,
-  countAssigned,
   hasAssignments,
   normalizeConfig,
   resolvePerception
@@ -193,58 +192,110 @@ function getSelectedToken() {
   return getActiveTokens().find(token => token.id === selectedTokenId) ?? null;
 }
 
-function buildPlayerRow(user, entry) {
-  const checked = entry.enabled ? "checked" : "";
-  const hidden = entry.hidden ? "checked" : "";
-  const activeClass = entry.enabled ? "is-active" : "";
+function getTokenImage(token) {
+  return token?.document?.texture?.src ?? token?.document?.img ?? "";
+}
+
+function buildPlayerRow(user, entry, token) {
+  const mode = entry.enabled ? (entry.hidden ? "hidden" : "custom") : "original";
   const image = escapeHtml(entry.image);
   const perceivedName = escapeHtml(entry.name);
+  const realName = escapeHtml(token?.document?.name ?? token?.name ?? "Token");
+  const originalImage = escapeHtml(getTokenImage(token));
+  const effectiveImage = image || originalImage;
+  const effectiveName = perceivedName || realName;
   const status = user.active ? "is-online" : "is-offline";
   const statusTitle = user.active
     ? localize("PERCEPTION_TOKENS.Online", "Conectado")
     : localize("PERCEPTION_TOKENS.Offline", "Desconectado");
+  const resultName = mode === "hidden"
+    ? localize("PERCEPTION_TOKENS.NotVisible", "Token oculto")
+    : effectiveName;
+  const resultCaption = mode === "original"
+    ? localize("PERCEPTION_TOKENS.ResultOriginal", "Verá la imagen y el nombre originales.")
+    : mode === "hidden"
+      ? localize("PERCEPTION_TOKENS.ResultHidden", "No verá este token en el mapa.")
+      : localize("PERCEPTION_TOKENS.ResultCustom", "Verá esta apariencia en lugar del token original.");
 
   return `
-    <article class="pt-player-row ${activeClass}" data-user-id="${user.id}">
+    <article class="pt-player-row is-${mode}" data-user-id="${user.id}" data-real-name="${realName}" data-original-image="${originalImage}">
       <header class="pt-player-header">
-        <label class="pt-switch">
-          <input type="checkbox" data-field="enabled" ${checked}>
-          <span class="pt-switch-slider"></span>
-        </label>
         <span class="pt-user-status ${status}" title="${statusTitle}"></span>
-        <strong>${escapeHtml(user.name)}</strong>
-        <span class="pt-row-state">${entry.enabled ? localize("PERCEPTION_TOKENS.Active", "ACTIVO") : localize("PERCEPTION_TOKENS.Inactive", "INACTIVO")}</span>
-      </header>
-      <div class="pt-player-fields">
-        <div class="pt-preview">
-          ${image ? `<img src="${image}" alt="">` : '<i class="fa-solid fa-user-secret"></i>'}
+        <div>
+          <small>${localize("PERCEPTION_TOKENS.WhatSees", "¿QUÉ VERÁ?")}</small>
+          <strong>${escapeHtml(user.name)}</strong>
         </div>
-        <label class="pt-field pt-field-image">
-          <span>${localize("PERCEPTION_TOKENS.Image", "Imagen aparente")}</span>
-          <div class="pt-file-row">
-            <input type="text" data-field="image" value="${image}" placeholder="tokens/apariencia.webp">
-            <button type="button" class="pt-file-picker" title="${localize("PERCEPTION_TOKENS.Browse", "Buscar archivo")}">
-              <i class="fa-solid fa-folder-open"></i>
-            </button>
+        <span class="pt-row-state"></span>
+      </header>
+
+      <div class="pt-mode-picker" role="radiogroup" aria-label="${localize("PERCEPTION_TOKENS.ViewMode", "Vista del jugador")}">
+        <label>
+          <input type="radio" data-field="mode" name="pt-mode-${escapeHtml(user.id)}" value="original" ${mode === "original" ? "checked" : ""}>
+          <span><i class="fa-solid fa-rotate-left"></i>${localize("PERCEPTION_TOKENS.SeesOriginal", "Ve el original")}</span>
+        </label>
+        <label>
+          <input type="radio" data-field="mode" name="pt-mode-${escapeHtml(user.id)}" value="custom" ${mode === "custom" ? "checked" : ""}>
+          <span><i class="fa-solid fa-wand-magic-sparkles"></i>${localize("PERCEPTION_TOKENS.SeesCustom", "Ve otra apariencia")}</span>
+        </label>
+        <label>
+          <input type="radio" data-field="mode" name="pt-mode-${escapeHtml(user.id)}" value="hidden" ${mode === "hidden" ? "checked" : ""}>
+          <span><i class="fa-solid fa-eye-slash"></i>${localize("PERCEPTION_TOKENS.SeesNothing", "No ve el token")}</span>
+        </label>
+      </div>
+
+      <div class="pt-player-body">
+        <section class="pt-result-card">
+          <div class="pt-result-label">${localize("PERCEPTION_TOKENS.ResultFor", "RESULTADO PARA")} ${escapeHtml(user.name)}</div>
+          <div class="pt-result-visual ${mode === "hidden" ? "is-hidden" : ""}">
+            ${mode !== "hidden" && effectiveImage ? `<img src="${effectiveImage}" alt="">` : `<i class="fa-solid ${mode === "hidden" ? "fa-eye-slash" : "fa-user-secret"}"></i>`}
           </div>
-        </label>
-        <label class="pt-field">
-          <span>${localize("PERCEPTION_TOKENS.Name", "Nombre aparente")}</span>
-          <input type="text" data-field="name" value="${perceivedName}" placeholder="${localize("PERCEPTION_TOKENS.RealName", "Dejar vacío para el nombre real")}">
-        </label>
-        <label class="pt-field pt-field-small">
-          <span>${localize("PERCEPTION_TOKENS.Scale", "Escala")}</span>
-          <input type="number" data-field="scale" value="${entry.scale}" min="0.25" max="3" step="0.05">
-        </label>
-        <label class="pt-field pt-field-small">
-          <span>${localize("PERCEPTION_TOKENS.Opacity", "Opacidad")}</span>
-          <input type="number" data-field="opacity" value="${Math.round(entry.opacity * 100)}" min="0" max="100" step="5">
-        </label>
-        <label class="pt-hidden-check">
-          <input type="checkbox" data-field="hidden" ${hidden}>
-          <i class="fa-solid fa-eye-slash"></i>
-          ${localize("PERCEPTION_TOKENS.Hide", "Ocultar para este jugador")}
-        </label>
+          <div class="pt-result-copy">
+            <strong>${resultName}</strong>
+            <span>${resultCaption}</span>
+            <div class="pt-result-badges ${mode === "custom" ? "" : "is-concealed"}">
+              <span data-result="scale">${entry.scale}×</span>
+              <span data-result="opacity">${Math.round(entry.opacity * 100)}%</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="pt-custom-editor">
+          <div class="pt-editor-title">
+            <i class="fa-solid fa-sliders"></i>
+            <span>${localize("PERCEPTION_TOKENS.CustomizeAppearance", "Personalizar lo que verá")}</span>
+          </div>
+          <div class="pt-player-fields">
+            <label class="pt-field pt-field-image">
+              <span>${localize("PERCEPTION_TOKENS.Image", "Imagen aparente")}</span>
+              <div class="pt-file-row">
+                <input type="text" data-field="image" value="${image}" placeholder="${originalImage || "tokens/apariencia.webp"}">
+                <button type="button" class="pt-file-picker" title="${localize("PERCEPTION_TOKENS.Browse", "Buscar archivo")}">
+                  <i class="fa-solid fa-folder-open"></i>
+                </button>
+              </div>
+              <small>${localize("PERCEPTION_TOKENS.ImageHint", "Vacío = usa la imagen original")}</small>
+            </label>
+            <label class="pt-field">
+              <span>${localize("PERCEPTION_TOKENS.Name", "Nombre aparente")}</span>
+              <input type="text" data-field="name" value="${perceivedName}" placeholder="${realName}">
+              <small>${localize("PERCEPTION_TOKENS.NameHint", "Vacío = usa el nombre original")}</small>
+            </label>
+            <label class="pt-field pt-field-small">
+              <span>${localize("PERCEPTION_TOKENS.Scale", "Tamaño")}</span>
+              <div class="pt-input-suffix">
+                <input type="number" data-field="scale" value="${entry.scale}" min="0.25" max="3" step="0.05">
+                <span>×</span>
+              </div>
+            </label>
+            <label class="pt-field pt-field-small">
+              <span>${localize("PERCEPTION_TOKENS.Opacity", "Opacidad")}</span>
+              <div class="pt-input-suffix">
+                <input type="number" data-field="opacity" value="${Math.round(entry.opacity * 100)}" min="0" max="100" step="5">
+                <span>%</span>
+              </div>
+            </label>
+          </div>
+        </section>
       </div>
     </article>`;
 }
@@ -260,7 +311,6 @@ function buildPanelContent() {
     return `<option value="${item.id}" ${item.id === selectedTokenId ? "selected" : ""}>${escapeHtml(item.name)}${configured}</option>`;
   }).join("");
 
-  const assigned = token ? countAssigned(config) : 0;
   const playerRows = players.length
     ? players.map(user => buildPlayerRow(user, config.viewers[user.id] ?? {
         enabled: false,
@@ -269,51 +319,58 @@ function buildPanelContent() {
         scale: 1,
         opacity: 1,
         hidden: false
-      })).join("")
+      }, token)).join("")
     : `<p class="pt-empty">${localize("PERCEPTION_TOKENS.NoPlayers", "No hay jugadores creados en este mundo.")}</p>`;
 
   return `
     <form class="pt-panel-form" autocomplete="off">
-      <section class="pt-summary">
+      <section class="pt-world-status ${enabled ? "is-enabled" : "is-disabled"}">
         <div class="pt-status-card ${enabled ? "is-enabled" : "is-disabled"}">
           <i class="fa-solid ${enabled ? "fa-eye" : "fa-eye-slash"}"></i>
           <div>
             <small>${localize("PERCEPTION_TOKENS.ModuleStatus", "ESTADO DEL MÓDULO")}</small>
-            <strong>${enabled ? localize("PERCEPTION_TOKENS.Enabled", "ACTIVO") : localize("PERCEPTION_TOKENS.Paused", "PAUSADO")}</strong>
+            <strong>${enabled ? localize("PERCEPTION_TOKENS.WorldActive", "Espejismo está activo") : localize("PERCEPTION_TOKENS.WorldPaused", "Espejismo está pausado")}</strong>
+            <span>${enabled ? localize("PERCEPTION_TOKENS.WorldActiveHint", "Cada jugador ve las reglas guardadas para él.") : localize("PERCEPTION_TOKENS.WorldPausedHint", "Todos ven los tokens originales; las reglas siguen guardadas.")}</span>
           </div>
           <button type="button" data-action="toggle-module" class="pt-toggle-module">
             ${enabled ? localize("PERCEPTION_TOKENS.Pause", "Pausar") : localize("PERCEPTION_TOKENS.Enable", "Activar")}
           </button>
         </div>
-        <div class="pt-metric">
-          <span>${configuredTokenCount()}</span>
-          <small>${localize("PERCEPTION_TOKENS.ConfiguredTokens", "tokens configurados")}</small>
-        </div>
-        <div class="pt-metric">
-          <span>${assigned}</span>
-          <small>${localize("PERCEPTION_TOKENS.AssignedPlayers", "jugadores en este token")}</small>
+        <div class="pt-world-metric"><strong>${configuredTokenCount()}</strong><span>${localize("PERCEPTION_TOKENS.ConfiguredTokens", "tokens configurados")}</span></div>
+      </section>
+
+      <section class="pt-step pt-token-step">
+        <div class="pt-step-number">1</div>
+        <div class="pt-step-content">
+          <h3>${localize("PERCEPTION_TOKENS.StepToken", "Elegí el token que querés configurar")}</h3>
+          <div class="pt-token-selector">
+            <label>
+              <span>${localize("PERCEPTION_TOKENS.SelectedToken", "Token seleccionado")}</span>
+              <select data-action="select-token" ${tokens.length ? "" : "disabled"}>
+                ${tokenOptions || `<option>${localize("PERCEPTION_TOKENS.NoTokens", "No hay tokens en la escena")}</option>`}
+              </select>
+            </label>
+            <button type="button" data-action="use-controlled" ${canvas?.tokens?.controlled?.length ? "" : "disabled"}>
+              <i class="fa-solid fa-crosshairs"></i> ${localize("PERCEPTION_TOKENS.UseControlled", "Usar token seleccionado en el mapa")}
+            </button>
+          </div>
+          <label class="pt-token-gate ${config.enabled ? "is-active" : "is-paused"}">
+            <input type="checkbox" data-action="token-enabled" ${config.enabled ? "checked" : ""} ${token ? "" : "disabled"}>
+            <span class="pt-switch-slider"></span>
+            <span class="pt-token-gate-copy">
+              <strong>${localize("PERCEPTION_TOKENS.TokenRules", "Aplicar reglas especiales a este token")}</strong>
+              <small>${config.enabled ? localize("PERCEPTION_TOKENS.TokenRulesOn", "Las elecciones de cada jugador se aplicarán al guardar.") : localize("PERCEPTION_TOKENS.TokenRulesOff", "Está apagado: todos verán el token original.")}</small>
+            </span>
+          </label>
         </div>
       </section>
 
-      <section class="pt-token-selector">
-        <label>
-          <span>${localize("PERCEPTION_TOKENS.SelectedToken", "Token seleccionado")}</span>
-          <select data-action="select-token" ${tokens.length ? "" : "disabled"}>
-            ${tokenOptions || `<option>${localize("PERCEPTION_TOKENS.NoTokens", "No hay tokens en la escena")}</option>`}
-          </select>
-        </label>
-        <label class="pt-token-enabled ${config.enabled ? "is-active" : ""}">
-          <input type="checkbox" data-action="token-enabled" ${config.enabled ? "checked" : ""} ${token ? "" : "disabled"}>
-          <span>${localize("PERCEPTION_TOKENS.TokenEnabled", "Percepciones habilitadas en este token")}</span>
-        </label>
-        <button type="button" data-action="use-controlled" ${canvas?.tokens?.controlled?.length ? "" : "disabled"}>
-          <i class="fa-solid fa-crosshairs"></i> ${localize("PERCEPTION_TOKENS.UseControlled", "Usar token controlado")}
-        </button>
-      </section>
-
-      <section class="pt-help">
-        <i class="fa-solid fa-circle-info"></i>
-        <span>${localize("PERCEPTION_TOKENS.Help", "Cada jugador verá únicamente su apariencia asignada. El token real, sus estadísticas y sus tiradas no se modifican.")}</span>
+      <section class="pt-step pt-viewers-step">
+        <div class="pt-step-number">2</div>
+        <div class="pt-step-content">
+          <h3>${localize("PERCEPTION_TOKENS.StepPlayers", "Decidí qué verá cada jugador")}</h3>
+          <p>${localize("PERCEPTION_TOKENS.StepPlayersHint", "El resultado se muestra dentro de cada tarjeta. Los jugadores sin cambios verán el token original.")}</p>
+        </div>
       </section>
 
       <section class="pt-player-list ${token ? "" : "is-disabled"}">
@@ -324,9 +381,12 @@ function buildPanelContent() {
         <button type="button" data-action="clear-token" class="pt-danger" ${token ? "" : "disabled"}>
           <i class="fa-solid fa-trash"></i> ${localize("PERCEPTION_TOKENS.Clear", "Limpiar este token")}
         </button>
-        <button type="button" data-action="save" class="pt-primary" ${token ? "" : "disabled"}>
-          <i class="fa-solid fa-floppy-disk"></i> ${localize("PERCEPTION_TOKENS.Save", "Guardar y aplicar")}
-        </button>
+        <div class="pt-save-area">
+          <span class="pt-unsaved"><i class="fa-solid fa-circle"></i> ${localize("PERCEPTION_TOKENS.Unsaved", "Hay cambios sin guardar")}</span>
+          <button type="button" data-action="save" class="pt-primary" ${token ? "" : "disabled"}>
+            <i class="fa-solid fa-floppy-disk"></i> ${localize("PERCEPTION_TOKENS.Save", "Guardar y aplicar")}
+          </button>
+        </div>
       </footer>
     </form>`;
 }
@@ -342,21 +402,78 @@ function refreshPanel() {
 }
 
 function collectRows(root) {
-  return [...root.querySelectorAll(".pt-player-row")].map(row => ({
-    userId: row.dataset.userId,
-    enabled: row.querySelector('[data-field="enabled"]')?.checked,
-    image: row.querySelector('[data-field="image"]')?.value ?? "",
-    name: row.querySelector('[data-field="name"]')?.value ?? "",
-    scale: row.querySelector('[data-field="scale"]')?.value ?? 1,
-    opacity: Number(row.querySelector('[data-field="opacity"]')?.value ?? 100) / 100,
-    hidden: row.querySelector('[data-field="hidden"]')?.checked
-  }));
+  return [...root.querySelectorAll(".pt-player-row")].map(row => {
+    const mode = row.querySelector('[data-field="mode"]:checked')?.value ?? "original";
+    return {
+      userId: row.dataset.userId,
+      enabled: mode !== "original",
+      image: row.querySelector('[data-field="image"]')?.value ?? "",
+      name: row.querySelector('[data-field="name"]')?.value ?? "",
+      scale: row.querySelector('[data-field="scale"]')?.value ?? 1,
+      opacity: Number(row.querySelector('[data-field="opacity"]')?.value ?? 100) / 100,
+      hidden: mode === "hidden"
+    };
+  });
 }
 
-function openFilePicker(input, preview) {
+function markPanelDirty(root) {
+  root.querySelector(".pt-unsaved")?.classList.add("is-visible");
+}
+
+function updatePlayerResult(row) {
+  const mode = row.querySelector('[data-field="mode"]:checked')?.value ?? "original";
+  const realName = row.dataset.realName || "Token";
+  const originalImage = row.dataset.originalImage || "";
+  const customImage = row.querySelector('[data-field="image"]')?.value.trim() ?? "";
+  const customName = row.querySelector('[data-field="name"]')?.value.trim() ?? "";
+  const scale = row.querySelector('[data-field="scale"]')?.value || "1";
+  const opacity = row.querySelector('[data-field="opacity"]')?.value || "100";
+  const visual = row.querySelector(".pt-result-visual");
+  const name = row.querySelector(".pt-result-copy > strong");
+  const caption = row.querySelector(".pt-result-copy > span");
+  const badges = row.querySelector(".pt-result-badges");
+  const state = row.querySelector(".pt-row-state");
+
+  row.classList.remove("is-original", "is-custom", "is-hidden");
+  row.classList.add(`is-${mode}`);
+
+  if (state) {
+    state.textContent = mode === "custom"
+      ? localize("PERCEPTION_TOKENS.StateCustom", "OTRA APARIENCIA")
+      : mode === "hidden"
+        ? localize("PERCEPTION_TOKENS.StateHidden", "OCULTO")
+        : localize("PERCEPTION_TOKENS.StateOriginal", "ORIGINAL");
+  }
+
+  const effectiveImage = mode === "custom" ? (customImage || originalImage) : originalImage;
+  if (visual) {
+    visual.classList.toggle("is-hidden", mode === "hidden");
+    visual.innerHTML = mode !== "hidden" && effectiveImage
+      ? `<img src="${escapeHtml(effectiveImage)}" alt="">`
+      : `<i class="fa-solid ${mode === "hidden" ? "fa-eye-slash" : "fa-user-secret"}"></i>`;
+  }
+
+  if (name) name.textContent = mode === "hidden"
+    ? localize("PERCEPTION_TOKENS.NotVisible", "Token oculto")
+    : mode === "custom" ? (customName || realName) : realName;
+
+  if (caption) caption.textContent = mode === "custom"
+    ? localize("PERCEPTION_TOKENS.ResultCustom", "Verá esta apariencia en lugar del token original.")
+    : mode === "hidden"
+      ? localize("PERCEPTION_TOKENS.ResultHidden", "No verá este token en el mapa.")
+      : localize("PERCEPTION_TOKENS.ResultOriginal", "Verá la imagen y el nombre originales.");
+
+  badges?.classList.toggle("is-concealed", mode !== "custom");
+  const scaleBadge = row.querySelector('[data-result="scale"]');
+  const opacityBadge = row.querySelector('[data-result="opacity"]');
+  if (scaleBadge) scaleBadge.textContent = `${scale}×`;
+  if (opacityBadge) opacityBadge.textContent = `${opacity}%`;
+}
+
+function openFilePicker(input, onChange) {
   const callback = path => {
     input.value = path;
-    if (preview) preview.innerHTML = `<img src="${escapeHtml(path)}" alt="">`;
+    onChange?.();
   };
 
   const LegacyFilePicker = foundry?.appv1?.api?.FilePicker ?? globalThis.FilePicker;
@@ -396,22 +513,41 @@ function bindPanelListeners(dialog, html) {
     refreshPanel();
   });
 
-  root.querySelectorAll('[data-field="enabled"]').forEach(input => {
-    input.addEventListener("change", () => {
-      const row = input.closest(".pt-player-row");
-      row.classList.toggle("is-active", input.checked);
-      const state = row.querySelector(".pt-row-state");
-      if (state) state.textContent = input.checked
-        ? localize("PERCEPTION_TOKENS.Active", "ACTIVO")
-        : localize("PERCEPTION_TOKENS.Inactive", "INACTIVO");
+  root.querySelectorAll(".pt-player-row").forEach(row => {
+    updatePlayerResult(row);
+    row.querySelectorAll('[data-field="mode"]').forEach(input => {
+      input.addEventListener("change", () => {
+        updatePlayerResult(row);
+        markPanelDirty(root);
+      });
+    });
+    row.querySelectorAll('[data-field="image"], [data-field="name"], [data-field="scale"], [data-field="opacity"]').forEach(input => {
+      input.addEventListener("input", () => {
+        updatePlayerResult(row);
+        markPanelDirty(root);
+      });
     });
   });
 
   root.querySelectorAll(".pt-file-picker").forEach(button => {
     button.addEventListener("click", () => {
       const row = button.closest(".pt-player-row");
-      openFilePicker(row.querySelector('[data-field="image"]'), row.querySelector(".pt-preview"));
+      openFilePicker(row.querySelector('[data-field="image"]'), () => {
+        updatePlayerResult(row);
+        markPanelDirty(root);
+      });
     });
+  });
+
+  root.querySelector('[data-action="token-enabled"]')?.addEventListener("change", event => {
+    const gate = event.currentTarget.closest(".pt-token-gate");
+    const copy = gate?.querySelector("small");
+    gate?.classList.toggle("is-active", event.currentTarget.checked);
+    gate?.classList.toggle("is-paused", !event.currentTarget.checked);
+    if (copy) copy.textContent = event.currentTarget.checked
+      ? localize("PERCEPTION_TOKENS.TokenRulesOn", "Las elecciones de cada jugador se aplicarán al guardar.")
+      : localize("PERCEPTION_TOKENS.TokenRulesOff", "Está apagado: todos verán el token original.");
+    markPanelDirty(root);
   });
 
   root.querySelector('[data-action="save"]')?.addEventListener("click", async () => {
@@ -470,7 +606,7 @@ function openPanel(token = null) {
     close: () => { panel = null; }
   }, {
     id: "perception-tokens-panel",
-    width: 920,
+    width: 880,
     height: "auto",
     resizable: true,
     classes: ["perception-tokens-window"]
